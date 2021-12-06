@@ -1,0 +1,39 @@
+Building plan P1) 
+
+Size: Relatively small
+
+Input: Coming closer
+Output: Sound and Ambient light
+
+Location: Bookshelf
+
+Parts needed:
+- Connector pieces (unspecified amount)
+- +/- 40 mm long pieces of tubing (unspecified amount)
+- Time of flight sensor
+- Speaker
+- DFPlayer & SD card
+- Jumper wires
+- White 3-pin cable
+- LED's (unspecified amount)
+- Itsybitsy board & casing
+- USB-C cable to 230V (or USB with 230V adapter)
+
+STEP 1:
+Solder all wires to the LEDs
+
+STEP 2:
+Connect the DFPlayer, speaker, and Time Of Flight sensor to the itsybitsyboard and put the case around it.
+For wiring the DFPlayer consult: https://wiki.dfrobot.com/DFPlayer_Mini_SKU_DFR0299
+
+STEP 3:
+Create an open structure with the connector pieces and a tubing. Keeping the same pattern all throughout the structure
+
+STEP 4:
+When the structure is finished keep it open, now mount the electronics into the structure
+
+Step 5: 
+Close off the structure and connect the power with the USB-C cable
+
+Step 6: 
+Hang the structure, or mount it in the desired place
