@@ -1,0 +1,8 @@
+4)
+
+Size: Medium
+
+Input: Touch
+Output: Sound and Ambient light
+
+Location: Bookshelf
