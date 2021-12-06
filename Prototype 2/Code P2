@@ -1,0 +1,61 @@
+#1.1 Imports
+import time
+import board
+from digitalio import DigitalInOut, Direction
+from DFPlayer import DFPlayer
+import adafruit_vl53l0x
+import busio
+import neopixel
+
+#1.2 Pixel setup
+num_pixels = 1
+pixel_pin = board.A2
+BRIGHTNESS = 0.3
+pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=BRIGHTNESS, auto_write=False)
+
+#1.2.1 Manual colours
+RED = (255, 0, 0, 0)
+YELLOW = (255, 150, 0, 0)
+GREEN = (0, 255, 0, 0)
+CYAN = (0, 255, 255, 0)
+BLUE = (0, 0, 255, 255)
+PURPLE = (255, 0, 255, 255)
+WHITE = (255, 255, 255, 255)
+BLACK = (0, 0, 0, 0)
+seq = [RED, YELLOW, GREEN, CYAN, BLUE, PURPLE, WHITE]
+
+#1.3 DFPlayer setup
+PLAYER_VOL = 30
+dfplayer = DFPlayer(volume=PLAYER_VOL) 
+dfplayer.previous()
+
+#1.4 TOF Sensor setup
+i2c = busio.I2C(board.SCL, board.SDA)
+vl53 = adafruit_vl53l0x.VL53L0X(i2c)
+
+#1.5 Buzzer setup
+buzzer = DigitalInOut(board.D3)
+buzzer.direction = Direction.OUTPUT
+
+
+
+#2.1 While True loop and values
+while True:
+    print("Range = ", vl53.range)
+
+    
+#2.2 Agency
+
+
+#2.3 User is near
+    if vl53.range < 8000:
+        buzzer.value = True
+
+#2.4 Audio file when started
+    if vl53.range < 100:
+        dfplayer.next()
+        buzzer.value = True
+
+#2. Reset when user is gone
+    buzzer.value = False
+
