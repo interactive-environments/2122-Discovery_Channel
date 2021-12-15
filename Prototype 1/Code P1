@@ -1,8 +1,12 @@
+# Interaction 1 - Sound 
+
+
+#Chapter 1 - Set-up
 #1.1 Imports
 import time
 import board
 from digitalio import DigitalInOut, Direction
-#from DFPlayer import DFPlayer
+from DFPlayer import DFPlayer
 import adafruit_vl53l0x
 import busio
 import neopixel
@@ -28,24 +32,38 @@ BLACK = (0, 0, 0, 0)
 seq = [RED, YELLOW, GREEN, CYAN, BLUE, PURPLE, WHITE]
 
 #1.3 DFPlayer setup
-#PLAYER_VOL = 80
-#dfplayer = DFPlayer(volume=PLAYER_VOL) 
-#dfplayer.previous()
+PLAYER_VOL = 80
+dfplayer = DFPlayer(volume=PLAYER_VOL)
+dfplayer.play()
 
 #1.4 TOF Sensor setup
 i2c = busio.I2C(board.SCL, board.SDA)
 vl53 = adafruit_vl53l0x.VL53L0X(i2c)
 
-#2.1 While True loop and values
+#1.5 Playing boolean
+Playing = False
+
+# Chapter 2 - Loop
 while True:
+
+#2.1 printing of the range and debounce    
     print("Range = ", vl53.range)
     time.sleep(0.1)
+    
 #2.2 Agency
-    if vl53.range > 100:
+    if vl53.range > 100 and Playing == False:
         pulse.animate()
     
-#2.3 Audio file when started
-    if vl53.range < 100:
-        #dfplayer.next()
+#2.3 Audio file when triggered
+    if vl53.range < 200 and Playing == False:
+        dfplayer.next()
         pixels.fill(AMBER)
         pixels.show()
+        Playing = True
+
+#2.4 reset when user is gone
+    if vl53.range > 200 and Playing == True:
+        dfplayer.previous()
+        Playing = False
+
+
