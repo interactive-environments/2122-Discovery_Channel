@@ -1,0 +1,204 @@
+#1.1 Imports
+import time
+import board
+from digitalio import DigitalInOut, Direction
+from analogio import AnalogOut, AnalogIn
+import adafruit_vl53l0x
+import adafruit_tca9548a
+import busio
+from adafruit_esp32spi import adafruit_esp32spi
+from adafruit_esp32spi import adafruit_esp32spi_wifimanager
+import adafruit_esp32spi.adafruit_esp32spi_socket as socket
+import adafruit_minimqtt as MQTT
+
+try:
+    from settings import settings
+except ImportError:
+    print("Settings import failed")
+    raise
+
+# --- Wifi Variables
+esp32_cs = DigitalInOut(board.D9)
+esp32_ready = DigitalInOut(board.D11)
+esp32_reset = DigitalInOut(board.D12)
+spi = busio.SPI(board.SCK, board.MOSI, board.MISO)
+esp = adafruit_esp32spi.ESP_SPIcontrol(spi, esp32_cs, esp32_ready, esp32_reset)
+wifi = adafruit_esp32spi_wifimanager.ESPSPI_WiFiManager(esp, settings)
+ip = str(settings['ip'])
+
+# --- MQTT Variables
+client_id = "itsy" #+ str(settings['bitsy_id'])
+left_topic = "/" + client_id + "/left"
+right_topic = "/" + client_id + "/right"
+up_topic = "/" + client_id + "/up"
+down_topic = "/" + client_id + "/down"
+mid_topic = "/" + client_id + "/mid"
+agency_topic = "/" + client_id + "/agency"
+actuators_topic = "/" + client_id + "/actuators"
+mqtt_client = MQTT.MQTT(broker=ip, port=1883, client_id=client_id)
+
+# --- WiFi & MQTT setup
+def wifi_mqtt_setup():
+    print("Connecting to WiFi...")
+    wifi.connect()
+    print("Connected!")
+    MQTT.set_socket(socket, esp)
+    mqtt_client.on_connect = connected
+    mqtt_client.on_disconnect = disconnected
+    # mqtt_client.on_message = message
+    print("Connecting to MQTT broker...")
+    mqtt_client.connect()
+
+
+# --- MQTT loop
+def mqtt_loop():
+    while True:
+        try:
+            mqtt_client.loop()
+            break
+        except (ValueError, RuntimeError) as e:
+            print("Failed to get data, retrying\n", e)
+            wifi.reset()
+            mqtt_client.reconnect()
+
+# --- When connected to the MQTT broker, the client subscribes to the actuators topic.
+def connected(client, userdata, flags, rc):
+    print(
+        "Connected to MQTT broker! Listening for actuator instructions on %s"
+        % actuators_topic
+    )
+    client.subscribe(actuators_topic)
+
+
+# --- This function executes when the client disconnects from the broker
+def disconnected(client, userdata, rc):
+    print("Disconnected from MQTT Broker!")
+
+# Sensor setup
+i2c = board.I2C()
+tca = adafruit_tca9548a.TCA9548A(i2c)
+
+sLeft_position = 0
+sRight_position = 1
+sUp_position = 2
+sDown_position = 3
+
+for channel in range(8):
+    if tca[channel].try_lock():
+        print("Channel {}:".format(channel), end="")
+        addresses = tca[channel].scan()
+        print([hex(address) for address in addresses if address != 0x70])
+        tca[channel].unlock()
+
+sLeft = adafruit_vl53l0x.VL53L0X(tca[sLeft_position])
+sRight = adafruit_vl53l0x.VL53L0X(tca[sRight_position])
+sUp = adafruit_vl53l0x.VL53L0X(tca[sUp_position])
+sDown = adafruit_vl53l0x.VL53L0X(tca[sDown_position])
+sMid = AnalogIn(board.A2)
+
+# Variables
+goLeft = False
+goRight = False
+goUp = False
+goDown = False
+downTrig = False
+midTrig = False
+still = False
+
+def setup():
+    wifi_mqtt_setup()
+
+def loop():
+
+    global goLeft, goRight, goUp, goDown, still, downTrig, midTrig, aOn
+
+    if (goLeft == False and goRight == False and goUp == False and goDown == False and still == False):
+        aOn = True
+    else:
+        aOn = False
+    if (aOn == True):
+        print("agency on")
+        mqtt_client.publish(agency_topic, "aOn")
+
+    # values read on left sensor
+    left_value = sLeft.range
+    if (left_value > 1294):
+        left_value = 1294
+    if (left_value < 50):
+        left_value = 50
+    if(left_value < 1294):
+        mqtt_client.publish(left_topic,"goLeft")
+        goLeft = True
+        print("goLeft")
+    else:
+        goLeft = False
+
+    # values read on right sensor
+    right_value = sRight.range
+    if(right_value > 1294):
+        right_value = 1294
+    if(right_value < 50):
+        right_value = 50
+    if(right_value < 1294):
+        mqtt_client.publish(right_topic,"goRight")
+        goRight = True
+        print("goRight")
+    else:
+        goRight = False
+
+    # values read on up sensor
+    up_value = sUp.range
+    if (up_value > 1294):
+        up_value = 1294
+    if (up_value < 50):
+        up_value = 50
+    if(up_value < 1294):
+        mqtt_client.publish(up_topic,"goUp")
+        goUp = True
+        print("goUp")
+    else:
+        goUp = False
+
+    # values read on up sensor
+    down_value = sDown.range
+    if (down_value > 1294):
+        down_value = 1294
+    if (down_value < 50):
+        down_value = 50
+    if(down_value < 1294):
+        downTrig = True
+    else:
+        downTrig = False
+
+    # values read on mid sensor
+    mid_value = sMid.value
+    if(mid_value > 46000):
+        mid_value = 46000
+    if(mid_value < 8000):
+        mid_value = 8000
+    if(mid_value > 8000):
+        mqtt_client.publish(mid_topic,mid_value)
+        midTrig = True
+    else:
+        midTrig = False
+
+    if midTrig == True and downTrig == True and goUp == False:
+        mqtt_client.publish(mid_topic,"still")
+        still = True
+        print("stand still")
+    else:
+        still = False
+
+    if midTrig == False and downTrig == True and goUp == False:
+        mqtt_client.publish(down_topic,"goDown")
+        goDown = True
+        print("go down")
+    else:
+        goDown = False
+
+    #print('left value =', left_value,'mid value =', mid_value, 'right value =', right_value)
+
+# --- Main program
+setup()
+while True:
+    loop()
