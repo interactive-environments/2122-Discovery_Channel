@@ -1,4 +1,4 @@
-# Interaction 2 - Sound & Haptic 
+# Interaction 2 - Sound & Haptic
 
 
 #Chapter 1 - Set-up
@@ -14,8 +14,8 @@ from adafruit_led_animation.animation.pulse import Pulse
 from adafruit_led_animation.color import AMBER
 import adafruit_tca9548a
 import adafruit_drv2605
- 
- 
+
+
 #1.1.1 I2C devices set-up
 i2c = board.I2C()
 tca = adafruit_tca9548a.TCA9548A(i2c)
@@ -29,7 +29,8 @@ for channel in range(8):
         tca[channel].unlock()
 sensor1 = adafruit_vl53l0x.VL53L0X(tca[sensor1_position])
 drv = adafruit_drv2605.DRV2605(tca[motor1_position])
- 
+
+
 
 #1.2 Pixel setup
 num_pixels = 1
@@ -54,15 +55,11 @@ seq = [RED, YELLOW, GREEN, CYAN, BLUE, PURPLE, WHITE]
 PLAYER_VOL = 80
 dfplayer = DFPlayer(volume=PLAYER_VOL)
 dfplayer.play()
-
-
-#1.4 TOF Sensor setup
-i2c = busio.I2C(board.SCL, board.SDA)
-vl53 = adafruit_vl53l0x.VL53L0X(i2c)
-
+dfplayer.next()
+n = 0
 
 #1.5 Playing boolean
-    Playing = False
+Playing = False
 
 
 
@@ -70,33 +67,42 @@ vl53 = adafruit_vl53l0x.VL53L0X(i2c)
 # Chapter 2 - Loop
 while True:
 
-#2.1 printing of the range and debounce    
-    print("Range = ", vl53.range)
+#2.1 printing of the range and debounce
+    print("Range = ", sensor1.range)
     time.sleep(0.1)
-    
+    n = n+1
+
 #2.2 Agency
-    if vl53.range > 100 and Playing = False:
-    pulse.animate()
-    
-#2.3 Audio and haptic file when triggered
-    if vl53.range < 100 and Playing = False:
+    if sensor1.range > 100 and Playing == False:
+        pulse.animate()
+        print("Loop number", n)
+        if n== 65:
+            dfplayer.next()
+            dfplayer.previous()
+            n=0
+
+#2.3 Audio file when triggered
+    if sensor1.range < 100 and Playing == False:
         dfplayer.next()
         pixels.fill(AMBER)
         pixels.show()
         Playing = True
-        drv.sequence[0] = adafruit_drv2605.Effect(1)
+
+
+#2.3 Audio file when triggered
+    if sensor1.range < 100 and Playing == True:
+        drv.sequence[0] = adafruit_drv2605.Effect(27)
         drv.sequence[1] = adafruit_drv2605.Pause(0.5)
-        drv.sequence[2] = adafruit_drv2605.Effect(47)
+        drv.sequence[2] = adafruit_drv2605.Effect(52)
         drv.sequence[3] = adafruit_drv2605.Effect(0)
-        drv.sequence[4] = adafruit_drv2605.Effect(1)
+        drv.sequence[4] = adafruit_drv2605.Effect(56)
         drv.sequence[5] = adafruit_drv2605.Pause(0.5)
-        drv.sequence[6] = adafruit_drv2605.Effect(47)
-        drv.sequence[7] = adafruit_drv2605.Effect(0)
+        drv.sequence[6] = adafruit_drv2605.Effect(10)
         drv.play()
 
 
 #2.4 reset when user is gone
-    if vl53.range >100 and Playing = True:
+    if sensor1.range >100 and Playing == True:
         dfplayer.previous()
         Playing = False
 
