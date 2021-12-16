@@ -1,4 +1,4 @@
-# Interaction 1 - Sound 
+# Interaction 1 - Sound
 
 
 #Chapter 1 - Set-up
@@ -14,11 +14,15 @@ from adafruit_led_animation.animation.pulse import Pulse
 from adafruit_led_animation.color import AMBER
 
 #1.2 Pixel setup
-num_pixels = 1
-pixel_pin = board.A2
+num_pixels1 = 15
+num_pixels2 = 14
+pixel_pin1 = board.A2
+pixel_pin2= board.A4
 BRIGHTNESS = 0.3
-pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=BRIGHTNESS, auto_write=False)
-pulse = Pulse(pixels, speed=0.1, color=AMBER, period=3)
+pixels1 = neopixel.NeoPixel(pixel_pin1, num_pixels1, brightness=BRIGHTNESS, auto_write=False)
+pixels2 = neopixel.NeoPixel(pixel_pin2, num_pixels2, brightness=BRIGHTNESS, auto_write=False)
+pulse1 = Pulse(pixels1, speed=0.1, color=AMBER, period=3)
+pulse2 = Pulse(pixels2, speed=0.1, color=AMBER, period=3)
 
 #1.2.1 Manual colours
 RED = (255, 0, 0, 0)
@@ -35,6 +39,8 @@ seq = [RED, YELLOW, GREEN, CYAN, BLUE, PURPLE, WHITE]
 PLAYER_VOL = 80
 dfplayer = DFPlayer(volume=PLAYER_VOL)
 dfplayer.play()
+dfplayer.next()
+n = 0
 
 #1.4 TOF Sensor setup
 i2c = busio.I2C(board.SCL, board.SDA)
@@ -46,19 +52,28 @@ Playing = False
 # Chapter 2 - Loop
 while True:
 
-#2.1 printing of the range and debounce    
+#2.1 printing of the range and debounce
     print("Range = ", vl53.range)
     time.sleep(0.1)
-    
+    n = n+1
+
 #2.2 Agency
     if vl53.range > 100 and Playing == False:
-        pulse.animate()
-    
+        pulse1.animate()
+        pulse2.animate()
+        print("Loop number", n)
+        if n== 65:
+            dfplayer.next()
+            dfplayer.previous()
+            n=0
+
 #2.3 Audio file when triggered
     if vl53.range < 200 and Playing == False:
         dfplayer.next()
-        pixels.fill(AMBER)
-        pixels.show()
+        pixels1.fill(AMBER)
+        pixels1.show()
+        pixels2.fill(AMBER)
+        pixels2.show()
         Playing = True
 
 #2.4 reset when user is gone
